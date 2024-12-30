@@ -1,85 +1,105 @@
-import javax.swing.*;
-import java.awt.*;
-import java.math.BigDecimal;
-import java.util.Map;
+ private void createLoginGUI() {
+        loginFrame = new JFrame("Login");
+        loginFrame.setSize(300, 150);
+        loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        loginFrame.setLayout(new GridLayout(3, 2));
 
-public class BarGraph extends JPanel {
+        JLabel userLabel = new JLabel("Username:");
+        JLabel passLabel = new JLabel("Password:");
+        userField = new JTextField();
+        passField = new JPasswordField();
+        JButton loginButton = new JButton("Login");
 
-    private final Map<String, BigDecimal> exchangeRates;
+        loginFrame.add(userLabel);
+        loginFrame.add(userField);
+        loginFrame.add(passLabel);
+        loginFrame.add(passField);
+        loginFrame.add(new JLabel()); // Empty space
+        loginFrame.add(loginButton);
 
-    public BarGraph(Map<String, BigDecimal> exchangeRates) {
-        this.exchangeRates = exchangeRates;
+        loginButton.addActionListener(e -> validateLogin());
+
+        loginFrame.setVisible(true);
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
+    // Validate login credentials
+    private void validateLogin() {
+        String username = userField.getText();
+        String password = new String(passField.getPassword());
 
-        // Cast Graphics to Graphics2D for better control
-        Graphics2D g2d = (Graphics2D) g;
-
-        // Enable anti-aliasing for smoother graphics
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Set up the axis labels
-        g2d.drawString("Currency Exchange Rates (USD Base)", 10, 20);
-
-        // Set up the bar width and spacing
-        int barWidth = 50;
-        int spaceBetweenBars = 20;
-        int startX = 50;
-
-        // Find the highest exchange rate to scale the bars
-        BigDecimal maxRate = exchangeRates.values().stream().max(BigDecimal::compareTo).orElse(BigDecimal.ONE);
-        int graphHeight = 300; // Height of the graph area
-        int offsetY = 30; // Start drawing below this offset
-
-        // Draw each bar
-        int i = 0;
-        for (Map.Entry<String, BigDecimal> entry : exchangeRates.entrySet()) {
-            String currency = entry.getKey();
-            BigDecimal rate = entry.getValue();
-
-            // Calculate the height of the bar (scaled relative to the highest exchange rate)
-            int barHeight = (int) (rate.doubleValue() / maxRate.doubleValue() * graphHeight);
-
-            // Set color for the bars
-            g2d.setColor(new Color(100, 150, 255));
-
-            // Draw the bar
-            g2d.fillRect(startX + (i * (barWidth + spaceBetweenBars)), graphHeight + offsetY - barHeight, barWidth, barHeight);
-
-            // Set color for the text (values on top of bars)
-            g2d.setColor(Color.BLACK);
-
-            // Display the currency value on top of the bar
-            g2d.drawString(rate.toString(), startX + (i * (barWidth + spaceBetweenBars)) + 5, graphHeight + offsetY - barHeight - 5);
-
-            // Display the currency code below the bar
-            g2d.drawString(currency, startX + (i * (barWidth + spaceBetweenBars)) + 5, graphHeight + offsetY + 15);
-
-            i++;
+        if (username.equals(validUsername) && password.equals(validPassword)) {
+            JOptionPane.showMessageDialog(loginFrame, "Login Successful!");
+            loginFrame.dispose();
+            createConverterGUI();
+        } else {
+            JOptionPane.showMessageDialog(loginFrame, "Invalid Credentials. Try Again.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    public static void main(String[] args) {
-        // Sample exchange rates data (relative to USD)
-        Map<String, BigDecimal> exchangeRates = Map.of(
-                "USD", BigDecimal.ONE,
-                "EUR", new BigDecimal("0.92"),
-                "GBP", new BigDecimal("0.79"),
-                "JPY", new BigDecimal("149.50"),
-                "AUD", new BigDecimal("1.52"),
-                "CAD", new BigDecimal("1.35"),
-                "CHF", new BigDecimal("0.88")
-        );
+    // Currency Converter GUI
+    private void createConverterGUI() {
+        converterFrame = new JFrame("Currency Converter");
+        converterFrame.setSize(400, 300);
+        converterFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        converterFrame.setLayout(new GridLayout(5, 2));
 
-        // Create and display the bar graph
-        JFrame frame = new JFrame("Currency Exchange Rates");
-        BarGraph barGraph = new BarGraph(exchangeRates);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.getContentPane().add(barGraph);
-        frame.setSize(800, 500);
-        frame.setVisible(true);
+        JLabel amountLabel = new JLabel("Enter Amount:");
+        JLabel fromLabel = new JLabel("From Currency:");
+        JLabel toLabel = new JLabel("To Currency:");
+        amountField = new JTextField();
+        JComboBox<String> fromCurrency = new JComboBox<>(new String[]{"USD", "INR", "EUR", "GBP"});
+        JComboBox<String> toCurrency = new JComboBox<>(new String[]{"USD", "INR", "EUR", "GBP"});
+        JButton convertButton = new JButton("Convert");
+        resultArea = new JTextArea();
+
+        converterFrame.add(amountLabel);
+        converterFrame.add(amountField);
+        converterFrame.add(fromLabel);
+        converterFrame.add(fromCurrency);
+        converterFrame.add(toLabel);
+        converterFrame.add(toCurrency);
+        converterFrame.add(new JLabel()); // Empty space
+        converterFrame.add(convertButton);
+        converterFrame.add(new JLabel("Result:"));
+        converterFrame.add(resultArea);
+
+        convertButton.addActionListener(e -> performConversion(fromCurrency, toCurrency));
+
+        converterFrame.setVisible(true);
+    }
+
+    // Perform currency conversion
+    private void performConversion(JComboBox<String> fromCurrency, JComboBox<String> toCurrency) {
+        try {
+            double amount = Double.parseDouble(amountField.getText());
+            String from = fromCurrency.getSelectedItem().toString();
+            String to = toCurrency.getSelectedItem().toString();
+
+            if (from.equals(to)) {
+                resultArea.setText("No conversion needed.");
+                return;
+            }
+
+            String key = from + "_TO_" + to;
+            if (exchangeRates.containsKey(key)) {
+                double rate = exchangeRates.get(key);
+                double convertedAmount = amount * rate;
+                resultArea.setText(String.format("%.2f %s = %.2f %s", amount, from, convertedAmount, to));
+                saveConversionData(amount, from, convertedAmount, to);
+            } else {
+                resultArea.setText("Conversion rate not available.");
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(converterFrame, "Invalid Amount Entered!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Save conversion data to a file
+    private void saveConversionData(double amount, String from, double convertedAmount, String to) {
+        try (FileWriter writer = new FileWriter("conversion_data.txt", true)) {
+            writer.write(String.format("%.2f %s -> %.2f %s%n", amount, from, convertedAmount, to));
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(converterFrame, "Error saving data!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
